@@ -79,6 +79,22 @@ SLC is a Delta hub, so nonstop options are plentiful.
 | Puerto Rico | Old San Juan, El Morro | El Yunque rainforest, beaches |
 | Oahu | Pearl Harbor, Iolani Palace | North Shore, Diamond Head, snorkeling |
 
+### Gulf & Atlantic Coast (History + Beaches)
+
+These destinations combine battleship/military history with beach time — great for the family's interests.
+
+| Destination | Airport | Routing | Highlights |
+|-------------|---------|---------|------------|
+| **Mobile/Gulf Shores, AL** | MOB | SLC → ATL → MOB | USS Alabama (WWII battleship + submarine), Gulf Shores beaches, Fort Morgan, Gulf State Park |
+| **Wilmington, NC** | ILM | SLC → ATL → ILM | USS North Carolina (WWII battleship), Wrightsville Beach, Fort Fisher, historic downtown |
+| **Outer Banks, NC** | ORF | SLC → ATL → ORF (85 min drive) | Wright Brothers Memorial, Cape Hatteras, wild horses at Corolla, Lost Colony, 70 mi of beaches |
+
+**Notes:**
+- Mobile/Gulf Shores: Best battleship + beach combo. Lower Marriott categories (Cat 3-4) stretch Bonvoy points further.
+- Wilmington: USS North Carolina rivals USS Alabama. Could combine with Outer Banks for 7-10 day trip (4.5 hr drive).
+- Outer Banks: Limited Marriott options — Airbnb beach houses are the norm and better fit. Wright Brothers is unique.
+- All three connect easily through ATL on Delta.
+
 ### Beach + Relaxation
 - Maui: beaches, Haleakala, Road to Hana
 - Turks & Caicos: pristine beaches (connect via ATL)
@@ -123,3 +139,26 @@ SLC is a Delta hub, so nonstop options are plentiful.
 - San Francisco, CA
 
 *These could be revisited as family trips.*
+
+---
+
+## Booking Notes & Learnings
+
+### Marriott Bonvoy Dynamic Pricing Reality
+Marriott uses dynamic pricing, so published category ranges are just guidelines. Actual findings:
+- **Category 4 properties** typically run **18,000-28,000 points/night** (not 12,000-16,000)
+- Off-peak dates can drop to 15,000-20,000
+- For 2 rooms × 3-4 nights, budget **100,000-150,000 Bonvoy** to be safe
+- Hybrid approach works well: 1 room on points, 1 room cash
+
+### PVU (Provo) Airport
+- Breeze Airways is the main carrier
+- **Does NOT serve San Diego** or many destinations we'd want
+- **Amex MR does NOT transfer to Breeze** — no points value
+- Stick with SLC for Delta redemptions
+
+### Washington DC Ground Transportation
+- **Skip the rental car** — Metro covers all major attractions
+- Fly into DCA (Reagan National) for direct Metro access to downtown
+- Metro for family of 6 runs ~$60-100 for 4 days vs $400+ for rental + parking
+- One of the few cities where car-free works well for the family

@@ -87,3 +87,19 @@ Before delivery, verify:
 ## Output
 
 Use the pptx skill for file generation. Reference `assets/pattern-template.pptx` for master slides and layouts.
+
+### QBR Compatibility
+
+This template is used by the `security-qbr` skill to generate branded QBR decks. Key template slide indices used by the QBR builder:
+
+| Template Slide | QBR Usage |
+|----------------|-----------|
+| 1 | Title slide |
+| 2 | Agenda |
+| 3, 20, 25, 32 | Section dividers |
+| 4 | Title + bullets (risks, incidents) |
+| 21-22 | Multi-column lists (roadmap, highlights) |
+| 35 | Dashboard (metrics) |
+| 36 | Closing slide |
+
+When modifying these template slides, verify the QBR output still renders correctly.

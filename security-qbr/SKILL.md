@@ -20,7 +20,7 @@ Draft executive-level Quarterly Business Reviews for Information Security teams.
 | 2 | Roadmap | Past quarter accountability + current quarter preview | ClickUp + snapshots |
 | 3 | Highlights | Key accomplishments from last quarter | ClickUp closed tasks |
 | 4 | Notable Incidents | Security incidents worth executive attention | **TODO** - TBD |
-| 5 | Metrics | KPIs and security posture measurements | **TODO** - TBD |
+| 5 | Metrics | Detection & response KPIs + cloud/code security posture | InsightIDR (Rapid7 MCP) + Wiz MCP |
 
 ---
 
@@ -32,30 +32,29 @@ Draft executive-level Quarterly Business Reviews for Information Security teams.
 │  1. Check sources/ and data/ directories                                │
 │  2. Prompt user for quarter and any missing materials                   │
 │  3. Write config.json with quarter info                                 │
-│  4. Launch 5 section agents IN PARALLEL                                 │
+│  4. Launch 6 section agents IN PARALLEL                                 │
 │  5. Wait for all agents to complete                                     │
-│  6. Launch Slide Builder Agent with all JSON outputs                    │
+│  6. Launch HTML + PPTX Builder Agents IN PARALLEL                       │
 │  7. Report final output location                                        │
 └─────────────────────────────────────────────────────────────────────────┘
                     │
-    ┌───────────────┼───────────────┬───────────────┬───────────────┐
-    ▼               ▼               ▼               ▼               ▼
-┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐
-│  Risk   │   │ Roadmap │   │Highlights│   │Incidents│   │ Metrics │
-│  Agent  │   │  Agent  │   │  Agent  │   │  Agent  │   │  Agent  │
-└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘
-    │               │               │               │               │
-    ▼               ▼               ▼               ▼               ▼
-risks.json    roadmap.json   highlights.json  incidents.json  metrics.json
+    ┌───────────────┼───────────────┬───────────────┬──────────────┬───────────────┐
+    ▼               ▼               ▼               ▼              ▼               ▼
+┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌──────────┐
+│  Risk   │   │ Roadmap │   │Highlights│   │Incidents│   │ Metrics │   │Wiz Cloud │
+│  Agent  │   │  Agent  │   │  Agent  │   │  Agent  │   │  Agent  │   │  Agent   │
+└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └──────────┘
+    │               │               │               │               │          │
+    ▼               ▼               ▼               ▼               ▼          ▼
+risks.json    roadmap.json   highlights.json  incidents.json  metrics.json  wiz-metrics.json
                     │
                     ▼
-         ┌─────────────────────┐
-         │  Slide Builder      │
-         │  Agent              │
-         │  - Creates HTML     │
-         │  - Runs build.js    │
-         │  - Outputs PPTX     │
-         └─────────────────────┘
+         ┌─────────────────────┐  ┌─────────────────────┐
+         │  HTML Slide Builder │  │  PPTX Builder       │
+         │  Agent              │  │  Agent              │
+         │  - 15 HTML files    │  │  - Template edit    │
+         │  - Browser slides   │  │  - Pattern .pptx    │
+         └─────────────────────┘  └─────────────────────┘
 ```
 
 ---
@@ -111,25 +110,28 @@ Save configuration to `{scratchpad}/qbr-data/config.json`:
 }
 ```
 
-### Step 4: Launch 5 section agents IN PARALLEL
+### Step 4: Launch 6 section agents IN PARALLEL
 
-Use the Task tool to launch all 5 data gathering agents simultaneously:
+Use the Task tool to launch all 6 data gathering agents simultaneously:
 
 ```javascript
-// Launch ALL 5 agents in parallel (single message with 5 Task tool calls)
+// Launch ALL 6 agents in parallel (single message with 6 Task tool calls)
 Task("Risk Review Agent", "general-purpose", riskAgentPrompt)
 Task("Roadmap Agent", "general-purpose", roadmapAgentPrompt)
 Task("Highlights Agent", "general-purpose", highlightsAgentPrompt)
 Task("Incidents Agent", "general-purpose", incidentsAgentPrompt)
 Task("Metrics Agent", "general-purpose", metricsAgentPrompt)
+Task("Wiz Cloud Security Agent", "general-purpose", wizMetricsAgentPrompt)
 ```
 
-### Step 5: Launch Slide Builder Agent
+### Step 5: Launch Builder Agents IN PARALLEL
 
-After all data agents complete, launch the slide builder:
+After all data agents complete, launch both builders simultaneously:
 
 ```javascript
-Task("Slide Builder Agent", "general-purpose", slideBuilderPrompt)
+// Launch BOTH builders in parallel (single message with 2 Task tool calls)
+Task("HTML Slide Builder Agent", "general-purpose", htmlSlideBuilderPrompt)
+Task("PPTX Builder Agent", "general-purpose", pptxBuilderPrompt)
 ```
 
 ### Step 6: Report output location
@@ -138,10 +140,12 @@ Task("Slide Builder Agent", "general-purpose", slideBuilderPrompt)
 QBR presentation generated successfully!
 
 Output files:
-- output/html-slides/*.html (14 slides)
+- output/{Quarter}-Security-QBR.pptx (PowerPoint — primary, for email/sharing)
+- output/html-slides/*.html (15 HTML slides — browser backup)
 
-To present: Open output/html-slides/slide01-title.html in a browser.
-Navigate with arrow keys or use the prev/next buttons.
+To present via PowerPoint: Open output/{Quarter}-Security-QBR.pptx
+To present via browser: Open output/html-slides/slide01-title.html
+  Navigate with arrow keys or use the prev/next buttons.
 ```
 
 ---
@@ -470,78 +474,397 @@ Summary: 2 incidents (1 Critical, 1 Medium)
 
 ---
 
-### 5. Metrics Agent (TODO)
+### 5. Metrics Agent
 
-**Status:** Not yet implemented - data sources TBD
+**Status:** Ready
 
-**Input:** TBD - possible sources:
-- Wiz security scores
-- InsightIDR metrics
-- KnowBe4 training completion
-- Manual KPI spreadsheet
-
+**Input:** InsightIDR (Rapid7 MCP) — `generate_kpi_report` with individual-tool fallback
 **Output:** `{scratchpad}/qbr-data/metrics.json`
 
-**Agent Prompt (Placeholder):**
+**5 KPIs:**
+
+| KPI | Source Field | Target | Status Logic |
+|-----|-------------|--------|--------------|
+| Mean Time to Detect (MTTD) | mttd.average | < 15 min | green ≤15m, amber ≤30m, red >30m |
+| Mean Time to Respond (MTTR) | mttr.average | < 24 hr | green ≤24h, amber ≤48h, red >48h |
+| Same-Day Resolution Rate | mttr.same_day_resolution_% | > 70% | green ≥70%, amber ≥50%, red <50% |
+| Investigation Volume | total_investigations | informational | always blue (info) |
+| True Positive Rate | disposition.malicious_% | informational | always blue (info) |
+
+**Agent Prompt:**
 ```
-Generate metrics data for QBR.
+Generate metrics data for QBR using InsightIDR (Rapid7 MCP).
 
-TODO: This agent is not yet implemented.
+Read config from: {scratchpad}/qbr-data/config.json
+- review_quarter: The quarter to pull metrics for (e.g., "FY25 Q4")
 
-For now, create a placeholder JSON indicating no metrics sources are configured.
+STEP 1: Map quarter to ISO date range
+Fiscal Year = Calendar Year:
+  Q1 = Jan 1 – Mar 31    Q2 = Apr 1 – Jun 30
+  Q3 = Jul 1 – Sep 30    Q4 = Oct 1 – Dec 31
 
-Output as JSON to: {scratchpad}/qbr-data/metrics.json
+Parse review_quarter (e.g., "FY25 Q4") → year=2025, quarter=4 → start=2025-10-01, end=2025-12-31.
+Also compute previous quarter range (one quarter back).
+
+STEP 2: Call generate_kpi_report (primary)
+Use mcp__rapid7-insightidr__generate_kpi_report with:
+  - start_time: review quarter start (ISO 8601)
+  - end_time: review quarter end (ISO 8601)
+
+If it returns successfully, extract:
+  - mttd.average (seconds)
+  - mttr.average (seconds)
+  - mttr.same_day_resolution_percentage (or similar %)
+  - total_investigations
+  - disposition stats → compute malicious / total × 100 for true-positive rate
+
+Then call generate_kpi_report again for the PREVIOUS quarter to get trend data.
+
+STEP 3: Fallback (if generate_kpi_report fails)
+Call these individually:
+  - mcp__rapid7-insightidr__calculate_mttd with start_time/end_time
+  - mcp__rapid7-insightidr__calculate_mttr with start_time/end_time
+  - mcp__rapid7-insightidr__get_disposition_stats with start_time/end_time
+  - mcp__rapid7-insightidr__get_analyst_workload with start_time/end_time
+If individual calls also fail, include what succeeded and skip what failed.
+
+STEP 4: Compute trends
+For each metric with both current and previous values:
+  - "improving" if current is better than previous
+  - "declining" if current is worse
+  - "stable" if within 5% of previous
+  - "unknown" if previous quarter data unavailable
+
+For MTTD/MTTR: lower is better.
+For Same-Day Resolution / True Positive Rate: higher is better.
+For Investigation Volume: no trend judgment (informational).
+
+STEP 5: Format human-readable values
+Convert seconds to human-readable:
+  - < 60s → "Xs" (e.g., "42s")
+  - < 3600s → "Xm Ys" (e.g., "6m 16s")
+  - < 86400s → "Xh Ym" (e.g., "2h 15m")
+  - ≥ 86400s → "Xd Yh" (e.g., "1d 4h")
+
+Percentages: round to 1 decimal, append "%" (e.g., "73.2%").
+Counts: plain number with commas (e.g., "1,247").
+
+STEP 6: Determine status badges
+| KPI | green (on_track) | amber (at_risk) | red (off_track) | blue (info) |
+|-----|-------------------|------------------|------------------|-------------|
+| MTTD | ≤ 900s (15m) | ≤ 1800s (30m) | > 1800s | — |
+| MTTR | ≤ 86400s (24h) | ≤ 172800s (48h) | > 172800s | — |
+| Same-Day Resolution | ≥ 70% | ≥ 50% | < 50% | — |
+| Investigation Volume | — | — | — | always |
+| True Positive Rate | — | — | — | always |
+
+STEP 7: Output JSON
+Write to: {scratchpad}/qbr-data/metrics.json
 
 Schema:
 {
   "quarter": "FY25 Q4",
-  "generated_at": "2026-01-28T10:00:00Z",
-  "status": "not_configured",
-  "message": "KPI data sources not yet configured",
-  "metrics": []
-}
-```
-
-**Future Schema (when implemented):**
-```json
-{
-  "quarter": "FY25 Q4",
-  "generated_at": "2026-01-28T10:00:00Z",
+  "generated_at": "<ISO 8601>",
   "status": "configured",
+  "sources": [
+    {
+      "name": "InsightIDR",
+      "type": "rapid7_insightidr_mcp",
+      "status": "success",
+      "date_range": { "start": "2025-10-01", "end": "2025-12-31" },
+      "previous_quarter_range": { "start": "2025-07-01", "end": "2025-09-30" }
+    }
+  ],
   "metrics": [
     {
       "name": "Mean Time to Detect",
       "category": "Detection",
-      "target": "<24h",
-      "actual": "18h",
+      "source": "InsightIDR",
+      "target": "<15m",
+      "actual": "6m 16s",
+      "actual_seconds": 376,
       "status": "on_track",
       "trend": "improving",
-      "notes": "Down from 22h last quarter"
+      "previous_value": "8m 42s",
+      "previous_seconds": 522,
+      "notes": "Down from 8m 42s last quarter",
+      "detail": {}
     },
     {
-      "name": "Patch Compliance",
-      "category": "Vulnerability Management",
-      "target": "95%",
-      "actual": "92%",
-      "status": "at_risk",
-      "trend": "stable"
+      "name": "Mean Time to Respond",
+      "category": "Response",
+      "source": "InsightIDR",
+      "target": "<24h",
+      "actual": "2h 15m",
+      "actual_seconds": 8100,
+      "status": "on_track",
+      "trend": "improving",
+      "previous_value": "3h 42m",
+      "previous_seconds": 13320,
+      "notes": "Down from 3h 42m last quarter",
+      "detail": {}
+    },
+    {
+      "name": "Same-Day Resolution Rate",
+      "category": "Response",
+      "source": "InsightIDR",
+      "target": ">70%",
+      "actual": "73.2%",
+      "actual_value": 73.2,
+      "status": "on_track",
+      "trend": "improving",
+      "previous_value": "68.5%",
+      "previous_actual_value": 68.5,
+      "notes": "Up from 68.5% last quarter",
+      "detail": {}
+    },
+    {
+      "name": "Investigation Volume",
+      "category": "Operations",
+      "source": "InsightIDR",
+      "target": null,
+      "actual": "1,247",
+      "actual_value": 1247,
+      "status": "info",
+      "trend": "stable",
+      "previous_value": "1,198",
+      "previous_actual_value": 1198,
+      "notes": "Similar volume to last quarter",
+      "detail": {}
+    },
+    {
+      "name": "True Positive Rate",
+      "category": "Detection",
+      "source": "InsightIDR",
+      "target": null,
+      "actual": "34.1%",
+      "actual_value": 34.1,
+      "status": "info",
+      "trend": "improving",
+      "previous_value": "29.8%",
+      "previous_actual_value": 29.8,
+      "notes": "Up from 29.8% last quarter",
+      "detail": {}
     }
-  ]
+  ],
+  "analyst_workload": {}
 }
-```
 
-**Open Questions:**
-- Which KPIs matter most? (MTTD, MTTR, patch compliance, training completion?)
-- Where is this data? (Wiz, InsightIDR, KnowBe4, manual?)
-- Historical comparison? (vs last quarter, vs target?)
+ERROR HANDLING:
+- If ALL InsightIDR calls fail: output placeholder with "status": "not_configured"
+  and "message": "InsightIDR API unavailable — metrics could not be retrieved"
+- If only previous quarter fails: set trend to "unknown" and previous_value to null
+- If partial metrics fail: include what succeeded, omit what failed
+- NEVER crash — always output valid JSON
+```
 
 **Slides Generated:**
 - `slide12-section5.html` - Section divider: "05. Metrics"
-- `slide13-metrics.html` - KPI dashboard (or placeholder message)
+- `slide13-metrics.html` - Detection & Response KPI dashboard with 5 metric cards (or placeholder if not configured)
 
 ---
 
-### 6. Slide Builder Agent
+### 5b. Wiz Cloud Security Agent
+
+**Status:** Ready
+
+**Input:** Wiz MCP tools (`wiz_get_issues`, `wiz_search`)
+**Output:** `{scratchpad}/qbr-data/wiz-metrics.json`
+
+**7 KPIs across 2 categories:**
+
+| KPI | Category | Source Tool | Target | Status Logic |
+|-----|----------|-------------|--------|--------------|
+| Cloud Security Score | Cloud Posture | `wiz_search` | ≥80% | green ≥80, amber ≥60, red <60 |
+| Critical Vulnerabilities | Cloud Posture | `wiz_get_issues` (severity=CRITICAL, status=OPEN) | 0 | green =0, amber ≤5, red >5 |
+| High Vulnerabilities | Cloud Posture | `wiz_get_issues` (severity=HIGH, status=OPEN) | ≤10 | green ≤10, amber ≤25, red >25 |
+| SLA Compliance Rate | Cloud Posture | Computed from `wiz_get_issues` (resolved within SLA) | ≥90% | green ≥90, amber ≥75, red <75 |
+| Critical SAST Findings | Code Security | `wiz_get_issues` (type=CODE, severity=CRITICAL) | 0 | green =0, amber ≤3, red >3 |
+| High SAST Findings | Code Security | `wiz_get_issues` (type=CODE, severity=HIGH) | ≤5 | green ≤5, amber ≤15, red >15 |
+| SCA Vulnerabilities | Code Security | `wiz_get_issues` (type=DEPENDENCY) | ≤5 critical | green ≤5, amber ≤10, red >10 |
+
+**Agent Prompt:**
+```
+Generate Wiz cloud security metrics for QBR.
+
+Read config from: {scratchpad}/qbr-data/config.json
+- review_quarter: The quarter to pull metrics for (e.g., "FY25 Q4")
+
+STEP 1: Map quarter to ISO date range
+Fiscal Year = Calendar Year:
+  Q1 = Jan 1 – Mar 31    Q2 = Apr 1 – Jun 30
+  Q3 = Jul 1 – Sep 30    Q4 = Oct 1 – Dec 31
+
+Parse review_quarter (e.g., "FY25 Q4") → year=2025, quarter=4 → start=2025-10-01, end=2025-12-31.
+Also compute previous quarter range (one quarter back).
+
+STEP 2: Get Cloud Security Score
+Use mcp__wiz__wiz_search to query for the overall cloud security posture score.
+Extract the percentage score.
+
+STEP 3: Get vulnerability counts
+Call mcp__wiz__wiz_get_issues with filters for each category:
+- Critical vulns: severity=CRITICAL, status=OPEN
+- High vulns: severity=HIGH, status=OPEN
+- Critical SAST: type=CODE, severity=CRITICAL
+- High SAST: type=CODE, severity=HIGH
+- SCA vulns: type=DEPENDENCY (count critical-severity)
+
+STEP 4: Compute SLA Compliance Rate
+Query resolved issues within the quarter date range.
+Calculate: (issues resolved within SLA / total resolved issues) × 100.
+
+STEP 5: Compute trends
+For each metric with both current and previous quarter values:
+  - "improving" if current is better than previous
+  - "declining" if current is worse
+  - "stable" if within 5% of previous
+  - "unknown" if previous quarter data unavailable
+
+For vulnerability counts: lower is better.
+For Cloud Security Score / SLA Compliance: higher is better.
+
+STEP 6: Format human-readable values
+Percentages: round to 1 decimal, append "%" (e.g., "82.5%").
+Counts: plain number (e.g., "3").
+
+STEP 7: Determine status badges
+| KPI | green (on_track) | amber (at_risk) | red (off_track) |
+|-----|-------------------|------------------|------------------|
+| Cloud Security Score | ≥ 80% | ≥ 60% | < 60% |
+| Critical Vulnerabilities | = 0 | ≤ 5 | > 5 |
+| High Vulnerabilities | ≤ 10 | ≤ 25 | > 25 |
+| SLA Compliance Rate | ≥ 90% | ≥ 75% | < 75% |
+| Critical SAST Findings | = 0 | ≤ 3 | > 3 |
+| High SAST Findings | ≤ 5 | ≤ 15 | > 15 |
+| SCA Vulnerabilities | ≤ 5 | ≤ 10 | > 10 |
+
+STEP 8: Output JSON
+Write to: {scratchpad}/qbr-data/wiz-metrics.json
+
+Schema:
+{
+  "quarter": "FY25 Q4",
+  "generated_at": "<ISO 8601>",
+  "status": "configured",
+  "sources": [
+    {
+      "name": "Wiz",
+      "type": "wiz_mcp",
+      "status": "success",
+      "date_range": { "start": "2025-10-01", "end": "2025-12-31" },
+      "previous_quarter_range": { "start": "2025-07-01", "end": "2025-09-30" }
+    }
+  ],
+  "metrics": [
+    {
+      "name": "Cloud Security Score",
+      "category": "Cloud Posture",
+      "source": "Wiz",
+      "target": "≥80%",
+      "actual": "82.5%",
+      "actual_value": 82.5,
+      "status": "on_track",
+      "trend": "improving",
+      "previous_value": "78.1%",
+      "previous_actual_value": 78.1,
+      "notes": "Up from 78.1% last quarter"
+    },
+    {
+      "name": "Critical Vulnerabilities",
+      "category": "Cloud Posture",
+      "source": "Wiz",
+      "target": "0",
+      "actual": "2",
+      "actual_value": 2,
+      "status": "at_risk",
+      "trend": "declining",
+      "previous_value": "0",
+      "previous_actual_value": 0,
+      "notes": "2 new critical vulns opened this quarter"
+    },
+    {
+      "name": "High Vulnerabilities",
+      "category": "Cloud Posture",
+      "source": "Wiz",
+      "target": "≤10",
+      "actual": "8",
+      "actual_value": 8,
+      "status": "on_track",
+      "trend": "improving",
+      "previous_value": "14",
+      "previous_actual_value": 14,
+      "notes": "Down from 14 last quarter"
+    },
+    {
+      "name": "SLA Compliance Rate",
+      "category": "Cloud Posture",
+      "source": "Wiz",
+      "target": "≥90%",
+      "actual": "91.3%",
+      "actual_value": 91.3,
+      "status": "on_track",
+      "trend": "stable",
+      "previous_value": "90.8%",
+      "previous_actual_value": 90.8,
+      "notes": "Consistent SLA adherence"
+    },
+    {
+      "name": "Critical SAST Findings",
+      "category": "Code Security",
+      "source": "Wiz",
+      "target": "0",
+      "actual": "0",
+      "actual_value": 0,
+      "status": "on_track",
+      "trend": "stable",
+      "previous_value": "0",
+      "previous_actual_value": 0,
+      "notes": "No critical SAST findings"
+    },
+    {
+      "name": "High SAST Findings",
+      "category": "Code Security",
+      "source": "Wiz",
+      "target": "≤5",
+      "actual": "3",
+      "actual_value": 3,
+      "status": "on_track",
+      "trend": "improving",
+      "previous_value": "7",
+      "previous_actual_value": 7,
+      "notes": "Down from 7 last quarter"
+    },
+    {
+      "name": "SCA Vulnerabilities",
+      "category": "Code Security",
+      "source": "Wiz",
+      "target": "≤5 critical",
+      "actual": "4",
+      "actual_value": 4,
+      "status": "on_track",
+      "trend": "improving",
+      "previous_value": "6",
+      "previous_actual_value": 6,
+      "notes": "Down from 6 last quarter"
+    }
+  ]
+}
+
+ERROR HANDLING:
+- If ALL Wiz calls fail: output placeholder with "status": "not_configured"
+  and "message": "Wiz API unavailable — cloud security metrics could not be retrieved"
+- If only previous quarter fails: set trend to "unknown" and previous_value to null
+- If partial metrics fail: include what succeeded, omit what failed
+- NEVER crash — always output valid JSON
+```
+
+**Slides Generated:**
+- `slide14-wiz-metrics.html` - Cloud & Code Security KPI dashboard with 7 metric cards (or placeholder if not configured)
+
+---
+
+### 6. HTML Slide Builder Agent
 
 **Input:** All JSON files from section agents in `{scratchpad}/qbr-data/`
 **Output:** HTML slides in `output/html-slides/`
@@ -557,16 +880,19 @@ Read all data from {scratchpad}/qbr-data/:
 - highlights.json
 - incidents.json
 - metrics.json
+- wiz-metrics.json
 
 Tasks:
-1. Create 14 HTML slides following Pattern brand guidelines
+1. Create 15 HTML slides following Pattern brand guidelines
 2. Use 1920×1080 (1080p) slide dimensions
 3. Include auto-scaling JavaScript in each slide
 4. Add prev/next navigation links to each slide
-5. Handle placeholder sections gracefully (Metrics if not configured)
-6. Write slides directly to output/html-slides/
+5. Handle placeholder sections gracefully (Metrics/Wiz if not configured)
+6. For slide13-metrics.html: If metrics.json has "status": "configured", render the Detection & Response KPI dashboard (see Metrics Slide Rendering below). If "status": "not_configured", render the placeholder message.
+7. For slide14-wiz-metrics.html: If wiz-metrics.json has "status": "configured", render the Cloud & Code Security KPI dashboard (see Wiz Metrics Slide Rendering below). If "status": "not_configured", render the placeholder message.
+8. Write slides directly to output/html-slides/
 
-Slide sequence (14 slides):
+Slide sequence (15 slides):
 - slide01-title.html (no prev link)
 - slide02-agenda.html
 - slide03-section1.html (Risk Review divider)
@@ -579,24 +905,212 @@ Slide sequence (14 slides):
 - slide10-section4.html (Notable Incidents divider)
 - slide11-incidents.html
 - slide12-section5.html (Metrics divider)
-- slide13-metrics.html
-- slide14-closing.html (no next link)
+- slide13-metrics.html (Detection & Response)
+- slide14-wiz-metrics.html (Cloud & Code Security)
+- slide15-closing.html (no next link)
 
 Each slide must include:
 - 1920×1080 fixed dimensions
 - Auto-scale JavaScript (see base template)
-- Navigation: prev/next links with slide counter (e.g., "4 / 14")
+- Navigation: prev/next links with slide counter (e.g., "4 / 15")
 - Keyboard navigation support
 
 Output:
-- output/html-slides/*.html (14 presentation-ready slides)
+- output/html-slides/*.html (15 presentation-ready slides)
 
 See "HTML Slide Generation" section for base template and CSS patterns.
 ```
 
+#### Metrics Slide Rendering (slide13-metrics.html)
+
+When `metrics.json` has `"status": "configured"`, render a KPI dashboard:
+
+**Layout:** 5 metric cards in a 3-column top row + 2-column bottom row (centered).
+
+**Each metric card contains:**
+1. **Category label** — small caps, muted color (e.g., "DETECTION", "RESPONSE", "OPERATIONS")
+2. **Metric name** — bold, 24-29px
+3. **Headline value** — large (48-59px), Pattern Blue (#009BFF) for the number
+4. **Status badge** — colored pill (green/amber/red/blue) with label
+5. **Trend indicator** — arrow (↑ improving, → stable, ↓ declining) + previous value text
+
+**Status badge colors:**
+```css
+.badge-on_track  { background: #28A745; color: white; }   /* Green - meeting target */
+.badge-at_risk   { background: #FFC107; color: #231F20; }  /* Amber - close to target */
+.badge-off_track { background: #DC3545; color: white; }    /* Red - missing target */
+.badge-info      { background: #009BFF; color: white; }    /* Blue - informational */
+```
+
+**Trend arrows:**
+```css
+.trend-improving { color: #28A745; } /* Green ↑ (or ↓ for MTTD/MTTR where lower=better) */
+.trend-declining { color: #DC3545; } /* Red ↓ (or ↑ for MTTD/MTTR where lower=better) */
+.trend-stable    { color: #6C757D; } /* Gray → */
+.trend-unknown   { color: #6C757D; } /* Gray — */
+```
+
+**Card CSS pattern:**
+```css
+.metric-card {
+  background: #F8F9FA;
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  border-left: 4px solid #009BFF;
+}
+.metric-card .category { font-size: 16px; text-transform: uppercase; letter-spacing: 2px; color: #6C757D; }
+.metric-card .name { font-size: 24px; font-weight: 600; color: #231F20; margin: 8px 0; }
+.metric-card .value { font-size: 48px; font-weight: 700; color: #009BFF; }
+.metric-card .target { font-size: 16px; color: #6C757D; margin-top: 4px; }
+.metric-card .trend { font-size: 18px; margin-top: 12px; }
+```
+
+**Slide title:** "{review_quarter} Detection & Response Metrics"
+**Subtitle:** "Source: InsightIDR"
+
+When `"status": "not_configured"`, show the existing placeholder message.
+
 ---
 
-## Slide Deck Structure (14 Slides)
+#### Wiz Metrics Slide Rendering (slide14-wiz-metrics.html)
+
+When `wiz-metrics.json` has `"status": "configured"`, render a Cloud & Code Security KPI dashboard:
+
+**Layout:** 7 metric cards — top row (4 Cloud Posture cards), bottom row (3 Code Security cards, centered).
+
+**Each metric card** uses the same `.metric-card` CSS pattern as slide13 (see above).
+
+**Category headers:** "CLOUD POSTURE" above top row, "CODE SECURITY" above bottom row.
+
+**Status badge colors:** Same as slide13 (green/amber/red).
+
+**Trend arrows:** Same as slide13 (↑ improving, → stable, ↓ declining).
+
+**Slide title:** "{review_quarter} Cloud & Code Security"
+**Subtitle:** "Source: Wiz"
+
+When `"status": "not_configured"`, show placeholder:
+```
+Wiz integration not configured.
+Cloud security metrics will be populated once Wiz MCP credentials are provided.
+```
+
+---
+
+### 7. PPTX Builder Agent
+
+**Input:** All JSON files from section agents in `{scratchpad}/qbr-data/`
+**Output:** `output/{Quarter}-Security-QBR.pptx`
+**Template:** Pattern brand template at `../pattern-pptx/assets/pattern-template.pptx` (relative to skill root)
+
+**Agent Prompt:**
+```
+Build a branded PowerPoint deck from QBR data using template-based XML editing.
+
+IMPORTANT: Use the /pptx skill's template editing workflow. This preserves embedded
+fonts (Ramaraja, Oswald, Montserrat) and branded master slides from the Pattern template.
+
+Read all data from {scratchpad}/qbr-data/:
+- config.json (quarter, date, presenter info)
+- risks.json
+- roadmap.json
+- highlights.json
+- incidents.json
+- metrics.json
+- wiz-metrics.json
+
+STEP 1: Copy template
+Copy the Pattern template to the output location:
+  cp ../pattern-pptx/assets/pattern-template.pptx output/{Quarter}-Security-QBR.pptx
+
+STEP 2: Unpack the PPTX
+  mkdir -p /tmp/qbr-pptx-work
+  cd /tmp/qbr-pptx-work
+  unzip -o output/{Quarter}-Security-QBR.pptx -d unpacked/
+
+STEP 3: Build slides from template source slides
+The template has 39 slides. You will duplicate specific source slides to create
+the 15-slide QBR deck. For each QBR slide, copy the source slide's XML as the
+starting point, then replace placeholder text with actual QBR content.
+
+Slide Mapping (QBR slide → template source slide to duplicate):
+
+| QBR Slide | Filename | Content | Source Slide | Layout Type |
+|-----------|----------|---------|-------------|-------------|
+| 1 | slide1.xml | Hero title, dark bg | Template slide 1 | Title — Ramaraja 148pt |
+| 2 | slide2.xml | 5-item agenda | Template slide 2 | Agenda — 4-column numbered |
+| 3 | slide3.xml | "01. Risk Review" | Template slide 3 | Section divider |
+| 4 | slide4.xml | Top 3-4 risks | Template slide 4 | Title + bullets |
+| 5 | slide5.xml | "02. Roadmap" | Template slide 20 | Section divider |
+| 6 | slide6.xml | Past quarter table | Template slide 21 | Multi-column list |
+| 7 | slide7.xml | Current quarter | Template slide 22 | Multi-column list |
+| 8 | slide8.xml | "03. Highlights" | Template slide 25 | Section divider |
+| 9 | slide9.xml | Categorized items | Template slide 21 | Multi-column list (dup) |
+| 10 | slide10.xml | "04. Notable Incidents" | Template slide 32 | Section divider |
+| 11 | slide11.xml | Incident summary | Template slide 4 | Title + bullets (dup) |
+| 12 | slide12.xml | "05. Metrics" | Template slide 3 | Section divider (dup) |
+| 13 | slide13.xml | 5 KPI cards | Template slide 35 | Dashboard layout |
+| 14 | slide14.xml | 7 KPI cards | Template slide 35 | Dashboard layout (dup) |
+| 15 | slide15.xml | "Questions" | Template slide 36 | Closing slide |
+
+STEP 4: Edit slide XML
+For each slide:
+1. Copy the source slide XML (e.g., cp unpacked/ppt/slides/slide1.xml unpacked/ppt/slides/slideN.xml)
+2. Also copy the corresponding relationship file (slide1.xml.rels → slideN.xml.rels)
+3. Edit the XML to replace placeholder text with QBR content from the JSON data
+4. Preserve all font references (Ramaraja, Oswald Medium, Montserrat Medium/Light)
+5. Preserve all color codes (#009BFF, #231F20, #F2F2F2, etc.)
+
+STEP 5: Update presentation.xml
+Edit unpacked/ppt/presentation.xml to reference exactly 15 slides (remove the
+other 24 template slides). Update the slide ID list and relationship references.
+
+STEP 6: Update [Content_Types].xml
+Ensure all 15 slides are listed in the content types file.
+
+STEP 7: Update _rels/presentation.xml.rels
+Update relationships to point to the 15 QBR slides only.
+
+STEP 8: Clean up unused slides
+Remove template slide XML files that aren't used in the final deck (slides 5-19,
+23-24, 26-31, 33-34, 37-39 from the original template numbering).
+
+STEP 9: Repack the PPTX
+  cd unpacked/
+  zip -r ../../output/{Quarter}-Security-QBR.pptx . -x ".*"
+
+STEP 10: Validate
+1. Run: python -m markitdown output/{Quarter}-Security-QBR.pptx
+   - Verify all 15 slides have content
+   - Check for leftover placeholder text (grep -iE "xxxx|lorem|ipsum|click to|insert")
+2. Verify slide count: unzip -l output/{Quarter}-Security-QBR.pptx | grep "ppt/slides/slide" | wc -l
+   Should output exactly 15.
+
+Brand Reference (inline from pattern-pptx):
+- Pattern Blue: #009BFF (accents, numbers, subtitles)
+- Dark Background: #231F20 (section dividers, title, closing)
+- Off-White: #F2F2F2 (titles on dark slides)
+- Light Gray: #F0F0F0 (section titles on dark)
+- Warm Gray: #E0DBD7 (metadata, dates)
+- Fonts: Ramaraja 148pt (hero title), Oswald Medium 72pt (section numbers),
+  Montserrat Medium 30pt (slide titles), Montserrat Light 18-24pt (body text)
+
+Content Notes:
+- Title slide: "{review_quarter} Information Security QBR" in Ramaraja
+- Section dividers: "01." / "02." etc. in Oswald Medium + Pattern Blue
+- Content slides: Populate from JSON data, same content as HTML slides
+- Metrics slides (13-14): Use dashboard layout with metric cards
+  If metrics/wiz-metrics have "status": "not_configured", show placeholder text
+- Closing slide: "Questions & Discussion"
+```
+
+**Slides Generated:**
+- `output/{Quarter}-Security-QBR.pptx` — 15-slide branded PowerPoint deck
+
+---
+
+## Slide Deck Structure (15 Slides)
 
 ```
 slide01-title.html           # Title: "Information Security QBR - Q1 FY26"
@@ -616,9 +1130,10 @@ slide10-section4.html        # "04. Notable Incidents"
 slide11-incidents.html       # Incidents summary (or placeholder)
 
 slide12-section5.html        # "05. Metrics"
-slide13-metrics.html         # KPI dashboard (or placeholder)
+slide13-metrics.html         # Detection & Response KPIs (or placeholder)
+slide14-wiz-metrics.html     # Cloud & Code Security KPIs (or placeholder)
 
-slide14-closing.html         # "Questions & Discussion"
+slide15-closing.html         # "Questions & Discussion"
 ```
 
 ---
@@ -820,7 +1335,7 @@ Each slide is a standalone HTML file with:
 
   <nav class="nav">
     <a href="prev-slide.html">← Prev</a>
-    <span>X / 14</span>
+    <span>X / 15</span>
     <a href="next-slide.html">Next →</a>
   </nav>
 
@@ -922,7 +1437,7 @@ All slides use the base template above. Here are the key CSS patterns for differ
 
 ### Slide Builder Notes
 
-The Slide Builder Agent creates individual HTML slides directly in `output/html-slides/`.
+The HTML Slide Builder Agent creates individual HTML slides directly in `output/html-slides/`.
 
 Each slide file is self-contained with:
 - 1920×1080 slide content
@@ -940,8 +1455,8 @@ To start the presentation, open `output/html-slides/slide01-title.html` in a bro
 
 ```
 output/
-├── {Quarter}-Security-QBR.pptx     # Final PowerPoint presentation (optional)
-└── html-slides/                     # Individual HTML slides (primary output)
+├── {Quarter}-Security-QBR.pptx     # PowerPoint presentation (primary — for email/sharing)
+└── html-slides/                     # Individual HTML slides (browser backup)
     ├── slide01-title.html
     ├── slide02-agenda.html
     ├── slide03-section1.html
@@ -955,8 +1470,19 @@ output/
     ├── slide11-incidents.html
     ├── slide12-section5.html
     ├── slide13-metrics.html
-    └── slide14-closing.html
+    ├── slide14-wiz-metrics.html
+    └── slide15-closing.html
 ```
+
+### PPTX Features
+
+The PowerPoint output uses the Pattern brand template with embedded fonts:
+- **Embedded fonts**: Ramaraja, Oswald Medium, Montserrat (Light/Medium/Regular)
+- **Branded masters**: Title, section divider, content, dashboard, closing layouts
+- **15 slides**: Matching content and structure with the HTML slides
+- **Portable**: Recipients see correct fonts even without them installed
+
+**To present**: Open `output/{Quarter}-Security-QBR.pptx` in PowerPoint or Keynote.
 
 ### HTML Slide Features
 
@@ -1058,18 +1584,42 @@ After building, verify the output:
    ├── roadmap.json
    ├── highlights.json
    ├── incidents.json
-   └── metrics.json
+   ├── metrics.json
+   └── wiz-metrics.json
    ```
 
-2. **Check slides generated:**
+2. **Check HTML slides generated:**
    ```bash
-   ls output/html-slides/  # Should show 14 HTML files
+   ls output/html-slides/  # Should show 15 HTML files
    ```
 
-3. **Test the presentation:**
+3. **Check PPTX generated:**
+   ```bash
+   # Verify file exists
+   ls output/*-Security-QBR.pptx
+
+   # Verify slide count (should be exactly 15)
+   unzip -l output/*-Security-QBR.pptx | grep "ppt/slides/slide[0-9]" | wc -l
+
+   # Extract text content and verify all slides have data
+   python -m markitdown output/*-Security-QBR.pptx
+
+   # Check for leftover placeholder text
+   python -m markitdown output/*-Security-QBR.pptx | grep -iE "xxxx|lorem|ipsum|click to edit|insert text"
+   # Should return no matches
+   ```
+
+4. **Test the HTML presentation:**
    - Open `output/html-slides/slide01-title.html` in a browser
    - Verify slides scale correctly when resizing the window
    - Test navigation with arrow keys and prev/next buttons
 
-4. **Confirm placeholder sections:**
-   - Metrics slide shows placeholder message if KPI data not configured
+5. **Test the PPTX presentation:**
+   - Open `output/{Quarter}-Security-QBR.pptx` in PowerPoint or Keynote
+   - Verify fonts render correctly (Ramaraja on title, Oswald on section numbers)
+   - Confirm content matches the HTML slides
+
+6. **Confirm placeholder sections:**
+   - Metrics slide shows placeholder message if InsightIDR data not configured
+   - Wiz metrics slide shows placeholder message if Wiz data not configured
+   - Both HTML and PPTX should show matching placeholder content

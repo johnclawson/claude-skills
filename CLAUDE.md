@@ -19,6 +19,7 @@ Each skill follows a consistent structure:
 | `security-qbr` | Generate quarterly business review presentations for InfoSec leadership |
 | `pattern-pptx` | Create PowerPoint presentations using Pattern Security brand guidelines |
 | `clawson-family-travel` | Vacation planning optimized for credit card points redemptions |
+| `music-rating-system` | Rate music library for kid-safe content and sync to kids library |
 
 ## Architecture Patterns
 
@@ -80,6 +81,105 @@ Quarter field value mapping (order_index):
 | Body Text | Montserrat Light/Medium 18-30pt |
 
 Template with 39 slide layouts: `pattern-pptx/assets/pattern-template.pptx`
+
+## Music Rating System
+
+Python scripts that scan a music library, fetch lyrics (Genius API), analyze content with Claude, and maintain a kid-safe subset of the library.
+
+### Kid-Safe Criteria
+
+- **No foul language** (mild "damn"/"hell" = caution, not blocked)
+- **No LGBTQ+ themes**
+- **No drug/alcohol themes** (literal use only; metaphorical "drunk on your love" = kid-safe)
+- **Romance OK, no sexual content**
+- **Figurative language is NOT flagged** - only literal references
+
+### Rating Categories
+
+| Rating | Description |
+|--------|-------------|
+| `kid-safe` | Appropriate for children |
+| `caution` | Parental discretion advised (mild language, borderline content) |
+| `not-safe` | Not appropriate for children |
+| `unknown` | Could not fetch lyrics or analyze (obscure tracks) |
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `music-rating-system/rate_music.py` | Main rating script - scans library, fetches lyrics, rates songs |
+| `music-rating-system/sync_kids_library.py` | Copies kid-safe music to `/mnt/media/Music-kids` via hardlinks |
+| `music-rating-system/generate_playlist.py` | Generate M3U playlists and CSV reports from ratings |
+| `music-rating-system/music_ratings.json` | Full ratings database (all 1,518 songs) |
+| `music-rating-system/requirements.txt` | Python dependencies: anthropic, lyricsgenius, mutagen, tqdm |
+
+### Library Paths
+
+| Path | Description |
+|------|-------------|
+| `/mnt/media/Music` | Main music library (source of truth) |
+| `/mnt/media/Music-kids` | Kid-safe subset (hardlinked, zero extra disk space) |
+
+### Environment Variables Required
+
+- `GENIUS_ACCESS_TOKEN` - Genius API token (https://genius.com/api-clients)
+- `ANTHROPIC_API_KEY` - Anthropic API key
+- Source these with `source ~/dotfiles/secrets` before running
+
+### Common Workflows
+
+**Rate new music after purchase:**
+```bash
+source ~/dotfiles/secrets
+cd ~/claude-skills/music-rating-system
+python rate_music.py /mnt/media/Music --rate-new --sync-kids /mnt/media/Music-kids
+```
+
+**Retry unknown songs** (after Genius rate limit resets):
+```bash
+python rate_music.py /mnt/media/Music --resume
+```
+
+**Sync kids library manually:**
+```bash
+python sync_kids_library.py music_ratings.json /mnt/media/Music-kids --clean
+```
+
+**Preview sync without changes:**
+```bash
+python sync_kids_library.py music_ratings.json /mnt/media/Music-kids --dry-run
+```
+
+### Architecture
+
+```
+rate_music.py
+├── Scan library (mutagen metadata extraction, ffprobe fallback)
+├── For each song:
+│   ├── Check [Clean] tag → auto kid-safe
+│   ├── Fetch lyrics from Genius API (1.5s rate limit between calls)
+│   │   ├── If lyrics found → analyze_lyrics_with_claude()
+│   │   └── If no lyrics → analyze_with_claude_knowledge() fallback
+│   └── Save incrementally every 10 songs
+├── Output: music_ratings.json + filtered kid_safe/not_safe JSONs
+└── Optional: --sync-kids triggers sync_kids_library
+```
+
+### Key Design Decisions
+
+- **Hardlinks** for kids library (same filesystem, zero extra space, instant sync)
+- **Genius rate limit handling**: tracks `_genius_retry_after` globally, skips Genius while limited and falls back to Claude knowledge
+- **[Clean] version trust**: if album/title contains `[Clean]`, auto-rated kid-safe without lyrics lookup
+- **Incremental save + resume**: saves every 10 songs; `--resume` retries unknowns, `--rate-new` skips everything already rated
+- **Claude Sonnet** (`claude-sonnet-4-20250514`) for content analysis - balances cost and accuracy
+- **Figurative vs literal**: analysis prompt explicitly distinguishes metaphorical language from literal drug/alcohol use to avoid false positives
+
+### Pitfalls
+
+1. **Genius rate limiting** - API returns HTTP 429 after ~50-100 rapid requests. The 1.5s delay helps but long runs will still get limited. The Claude knowledge fallback handles this gracefully.
+2. **Wrong lyrics from Genius** - Instrumental tracks or obscure songs may get matched to wrong lyrics (e.g., a Shostakovich violin adagio got explicit rap lyrics). The Claude knowledge fallback is better for classical/instrumental.
+3. **Bare `except` clauses** - The original Genius library swallows errors silently. Our wrapper catches 429/1015 errors explicitly.
+4. **`--resume` vs `--rate-new`** - `--resume` retries unknowns (for after rate limit resets). `--rate-new` skips everything already rated including unknowns (for new music additions).
 
 ## Common Pitfalls
 
